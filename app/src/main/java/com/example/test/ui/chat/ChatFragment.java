@@ -1,24 +1,26 @@
 package com.example.test.ui.chat;
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.example.test.R;
 import com.example.test.data.model.Message;
 import com.example.test.data.network.ApiClient;
 import com.example.test.data.network.ApiService;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
-import retrofit2.Call;
-
-public class ChatActivity extends AppCompatActivity {
+public class ChatFragment extends Fragment {
 
     private RecyclerView recyclerView;
     private EditText messageEditText;
@@ -27,10 +29,15 @@ public class ChatActivity extends AppCompatActivity {
     private MessageAdapter adapter;
     private ArrayList<Message> messages = new ArrayList<>();
 
+    @Nullable
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_chat);
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.activity_chat, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
         // test data
         messages.add(new Message("1", true, "Hi!"));
@@ -40,17 +47,17 @@ public class ChatActivity extends AppCompatActivity {
         messages.add(new Message("1", false, "And you?"));
         messages.add(new Message("1", true, "I'm fine too, thanks."));
 
-        recyclerView = findViewById(R.id.rv_chat);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView = view.findViewById(R.id.rv_chat);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         adapter = new MessageAdapter(messages);
         recyclerView.setAdapter(adapter);
 
-        messageEditText = findViewById(R.id.et_message);
-        buttonSend = findViewById(R.id.btn_send);
+        messageEditText = view.findViewById(R.id.et_message);
+        buttonSend = view.findViewById(R.id.btn_send);
         buttonSend.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "4pok", Toast.LENGTH_SHORT).show();
             ApiClient.getClient().create(ApiService.class).sendMessage(messageEditText.getText().toString());
         });
-
     }
 }
