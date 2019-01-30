@@ -14,18 +14,9 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.test.R;
-import com.example.test.data.model.Chat;
 import com.example.test.data.model.Message;
-import com.example.test.data.network.ApiClient;
-import com.example.test.data.network.ApiService;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class ChatFragment extends Fragment {
 

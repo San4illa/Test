@@ -12,8 +12,6 @@ import com.example.test.data.network.ApiService;
 import java.io.IOException;
 import java.util.List;
 
-import io.reactivex.Single;
-
 public class CitiesLoader extends AsyncTaskLoader<List<City>> {
     private List<City> cities;
 
@@ -22,7 +20,7 @@ public class CitiesLoader extends AsyncTaskLoader<List<City>> {
     private double minLng;
     private double maxLng;
 
-    public CitiesLoader(@NonNull Context context, double minLat, double maxLat, double minLng, double maxLng) {
+    CitiesLoader(@NonNull Context context, double minLat, double maxLat, double minLng, double maxLng) {
         super(context);
 
         this.minLat = minLat;

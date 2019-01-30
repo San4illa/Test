@@ -54,7 +54,7 @@ public class LoginActivity extends AppCompatActivity {
                 String password = passwordEditText.getText().toString();
 
                 if (password.equals(number.substring(number.length() - 5))) {
-                    Toast.makeText(this, "Login is successful!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.login_successful), Toast.LENGTH_SHORT).show();
 
                     SharedPreferences preferences = getSharedPreferences("loginPrefs", MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
@@ -64,10 +64,10 @@ public class LoginActivity extends AppCompatActivity {
 
                     openMainActivity();
                 } else {
-                    passwordEditText.setError("Incorrect password");
+                    passwordEditText.setError(getString(R.string.error_incorrect_password));
                 }
             } else {
-                numberEditText.setError("Number is not valid");
+                numberEditText.setError(getString(R.string.error_not_valid_number));
             }
 
         } catch (NumberParseException e) {
