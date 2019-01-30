@@ -5,9 +5,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -15,14 +16,16 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.example.test.R;
 import com.example.test.data.model.City;
-import com.example.test.data.network.ApiClient;
-import com.example.test.data.network.ApiService;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
@@ -30,17 +33,17 @@ import com.google.android.gms.maps.model.VisibleRegion;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.reactivex.Observer;
+import io.reactivex.Single;
+import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
-
-import static android.content.ContentValues.TAG;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private static final int MAP_VIEW = 0;
     private static final int LIST_VIEW = 1;
+    private static final int LOADER_ID = 5;
 
     private int viewType = MAP_VIEW;
 
@@ -54,11 +57,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private ArrayList<City> cities = new ArrayList<>();
 
-    private LatLng farLeft = new LatLng(0, 0);
-    private LatLng farRight = new LatLng(0, 0);
-    private LatLng nearLeft = new LatLng(0, 0);
-    private LatLng nearRight = new LatLng(0, 0);
-
+    double minLat = 0;
+    double maxLat = 0;
+    double minLng = 0;
+    double maxLng = 0;
 
     @Nullable
     @Override
@@ -84,7 +86,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         progressBar = view.findViewById(R.id.pb);
         fab = view.findViewById(R.id.fab);
-        fab.setOnClickListener(v -> getMarks());
+        fab.setOnClickListener(v -> {
+            getMarks();
+            startLoading(true);
+        });
+
+        startLoading(false);
+    }
+
+    private void startLoading(boolean restart) {
+        LoaderManager.LoaderCallbacks<List<City>> callbacks = new CitiesListCallback();
+        if (restart) {
+            getActivity().getSupportLoaderManager().restartLoader(LOADER_ID, null, callbacks);
+        } else {
+            getActivity().getSupportLoaderManager().initLoader(LOADER_ID, null, callbacks);
+        }
     }
 
     private void getMarks() {
@@ -92,60 +108,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         VisibleRegion visibleRegion = map.getProjection().getVisibleRegion();
 
-        farLeft = visibleRegion.farLeft;
-        farRight = visibleRegion.farRight;
-        nearLeft = visibleRegion.nearLeft;
-        nearRight = visibleRegion.nearRight;
+        LatLng farRight = visibleRegion.farRight;
+        LatLng nearLeft = visibleRegion.nearLeft;
 
         mapView.getMapAsync(MapFragment.this::onMapReady);
 
-        double minLat = nearLeft.latitude;
-        double maxLat = farRight.latitude;
-        double minLng = nearLeft.longitude;
-        double maxLng = farRight.longitude;
-
-        ApiClient.getClient().create(ApiService.class).getCitiesRx(minLat, maxLat, minLng, maxLng)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeOn(Schedulers.io())
-                .subscribeWith(new Observer<List<City>>() {
-                    @Override
-                    public void onSubscribe(Disposable d) {
-                        Log.d(TAG, "onSubscribe");
-                    }
-
-                    @Override
-                    public void onNext(List<City> c) {
-                        Log.d(TAG, "onNext: " + c.size());
-
-                        cities.clear();
-
-                        int max;
-                        if (c.size() < 250) {
-                            max = c.size();
-                        } else {
-                            max = 250;
-                        }
-
-                        for (int i = 0; i < max; i++) {
-                            cities.add(c.get(i));
-                        }
-
-                        mapView.getMapAsync(MapFragment.this::onMapReady);
-                        adapter.notifyDataSetChanged();
-
-                        progressBar.setVisibility(View.INVISIBLE);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.d(TAG, "onError " + e);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        Log.d(TAG, "onComplete");
-                    }
-                });
+        minLat = nearLeft.latitude;
+        maxLat = farRight.latitude;
+        minLng = nearLeft.longitude;
+        maxLng = farRight.longitude;
     }
 
     @Override
@@ -188,6 +159,104 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             map.addMarker(new MarkerOptions()
                     .position(new LatLng(city.getLat(), city.getLng()))
                     .title(city.getCountry() + ": " + city.getName()));
+        }
+    }
+
+    private void showCitiesRx(Single<List<City>> single) {
+        single.subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new SingleObserver<List<City>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        progressBar.setVisibility(View.VISIBLE);
+
+                    }
+
+                    @Override
+                    public void onSuccess(List<City> c) {
+                        cities.clear();
+
+                        int max;
+                        if (c.size() < 250) {
+                            max = c.size();
+                        } else {
+                            max = 250;
+                        }
+
+                        for (int i = 0; i < max; i++) {
+                            cities.add(c.get(i));
+                        }
+
+                        mapView.getMapAsync(MapFragment.this::onMapReady);
+                        adapter.notifyDataSetChanged();
+
+                        progressBar.setVisibility(View.INVISIBLE);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        //showError();
+                        progressBar.setVisibility(View.INVISIBLE);
+                        Toast.makeText(getContext(), "onError", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void showCities(List<City> c) {
+        cities.clear();
+
+        Toast.makeText(getContext(), c.size() + "", Toast.LENGTH_SHORT).show();
+
+        int max;
+        if (c.size() < 250) {
+            max = c.size();
+        } else {
+            max = 250;
+        }
+
+        for (int i = 0; i < max; i++) {
+            cities.add(c.get(i));
+        }
+
+        mapView.getMapAsync(MapFragment.this::onMapReady);
+        adapter.notifyDataSetChanged();
+
+        progressBar.setVisibility(View.INVISIBLE);
+    }
+
+    private class CitiesListCallbackRx implements LoaderManager.LoaderCallbacks<Single<List<City>>> {
+
+        @NonNull
+        @Override
+        public Loader<Single<List<City>>> onCreateLoader(int i, @Nullable Bundle bundle) {
+            return new CitiesLoaderRx(getContext(), minLat, maxLat, minLng, maxLng);
+        }
+
+        @Override
+        public void onLoadFinished(@NonNull Loader<Single<List<City>>> loader, Single<List<City>> single) {
+            showCitiesRx(single);
+        }
+
+        @Override
+        public void onLoaderReset(@NonNull Loader<Single<List<City>>> loader) {
+        }
+    }
+
+    private class CitiesListCallback implements LoaderManager.LoaderCallbacks<List<City>> {
+        @NonNull
+        @Override
+        public Loader<List<City>> onCreateLoader(int i, @Nullable Bundle bundle) {
+            return new CitiesLoader(getContext(), minLat, maxLat, minLng, maxLng);
+        }
+
+        @Override
+        public void onLoadFinished(@NonNull Loader<List<City>> loader, List<City> cities) {
+            showCities(cities);
+        }
+
+        @Override
+        public void onLoaderReset(@NonNull Loader<List<City>> loader) {
+
         }
     }
 }
