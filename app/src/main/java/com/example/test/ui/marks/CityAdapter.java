@@ -17,7 +17,7 @@ public class CityAdapter extends RecyclerView.Adapter<CityAdapter.CityAdapterVie
 
     private ArrayList<City> cities;
 
-    CityAdapter(ArrayList<City> cities) {
+    public CityAdapter(ArrayList<City> cities) {
         this.cities = cities;
     }
 

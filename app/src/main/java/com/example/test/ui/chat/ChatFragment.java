@@ -32,7 +32,7 @@ public class ChatFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.activity_chat, container, false);
+        return inflater.inflate(R.layout.fragment_chat, container, false);
     }
 
     @Override
@@ -48,7 +48,9 @@ public class ChatFragment extends Fragment {
         messages.add(new Message("1", true, "I'm fine too, thanks."));
 
         recyclerView = view.findViewById(R.id.rv_chat);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext());
+        linearLayoutManager.setStackFromEnd(true);
+        recyclerView.setLayoutManager(linearLayoutManager);
 
         adapter = new MessageAdapter(messages);
         recyclerView.setAdapter(adapter);
@@ -56,8 +58,11 @@ public class ChatFragment extends Fragment {
         messageEditText = view.findViewById(R.id.et_message);
         buttonSend = view.findViewById(R.id.btn_send);
         buttonSend.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "4pok", Toast.LENGTH_SHORT).show();
-            ApiClient.getClient().create(ApiService.class).sendMessage(messageEditText.getText().toString());
+            Toast.makeText(getContext(), "Click", Toast.LENGTH_SHORT).show();
+            messages.add(new Message("1", true, messageEditText.getText().toString()));
+            recyclerView.scrollToPosition(messages.size() + 1);
+            adapter.notifyDataSetChanged();
+            messageEditText.setText("");
         });
     }
 }

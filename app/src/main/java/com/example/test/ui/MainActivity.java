@@ -15,6 +15,7 @@ import android.view.MenuItem;
 
 import com.example.test.R;
 import com.example.test.ui.chat.ChatFragment;
+import com.example.test.ui.login.LoginFragment;
 import com.example.test.ui.map.MapFragment;
 import com.example.test.ui.marks.MarksFragment;
 
@@ -22,6 +23,8 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private DrawerLayout drawer;
+//    private Fragment fragment = new LoginFragment();
+    private Fragment fragment = new com.example.test.ui.MapFragment();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +41,9 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        inflateFragment(fragment);
+        setTitle(getString(R.string.title_map));
     }
 
     @Override
@@ -69,8 +75,6 @@ public class MainActivity extends AppCompatActivity
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        Fragment fragment = null;
-
         switch (item.getItemId()){
             case R.id.nav_map:
                 fragment = new MapFragment();
@@ -83,13 +87,18 @@ public class MainActivity extends AppCompatActivity
                 break;
         }
 
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        inflateFragment(fragment);
 
-        fragmentTransaction.replace(R.id.fragment_containter, fragment);
-        fragmentTransaction.commit();
+        setTitle(item.getTitle());
 
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    private void inflateFragment(Fragment fragment){
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+
+        fragmentTransaction.replace(R.id.fragment_containter, fragment);
+        fragmentTransaction.commit();
     }
 }
