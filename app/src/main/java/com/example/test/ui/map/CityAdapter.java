@@ -1,4 +1,4 @@
-package com.example.test.ui.marks;
+package com.example.test.ui.map;
 
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -11,13 +11,12 @@ import com.example.test.R;
 import com.example.test.data.model.City;
 
 import java.util.ArrayList;
-import java.util.Locale;
 
 public class CityAdapter extends RecyclerView.Adapter<CityAdapter.CityAdapterViewHolder> {
 
     private ArrayList<City> cities;
 
-    public CityAdapter(ArrayList<City> cities) {
+    CityAdapter(ArrayList<City> cities) {
         this.cities = cities;
     }
 
@@ -32,8 +31,10 @@ public class CityAdapter extends RecyclerView.Adapter<CityAdapter.CityAdapterVie
     public void onBindViewHolder(@NonNull CityAdapterViewHolder holder, int position) {
         City city = cities.get(position);
 
-        Locale loc = new Locale("", city.getCountry());
-        holder.countryTextView.setText(loc.getDisplayCountry());
+//        Locale loc = new Locale("", city.getCountry());
+//        holder.countryTextView.setText(loc.getDisplayCountry());
+
+        holder.countryTextView.setText(city.getCountry());
         holder.nameTextView.setText(city.getName());
     }
 

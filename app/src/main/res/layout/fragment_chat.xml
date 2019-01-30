@@ -12,16 +12,24 @@
         app:layout_constraintBottom_toTopOf="@+id/ll_message"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/black"
+        app:layout_constraintBottom_toTopOf="@+id/ll_message"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <LinearLayout
         android:id="@+id/ll_message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="48dp"
         android:maxHeight="96dp"
+        android:minHeight="48dp"
         android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent"
         android:paddingLeft="8dp"
-        android:paddingRight="8dp">
+        android:paddingRight="8dp"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <EditText
             android:id="@+id/et_message"
@@ -29,8 +37,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="10"
             android:hint="Message"
-            android:textAlignment="viewStart"
-            android:maxLines="4"/>
+            android:maxLines="4"
+            android:textAlignment="viewStart" />
 
         <Button
             android:id="@+id/btn_send"

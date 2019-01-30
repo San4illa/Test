@@ -1,43 +1,45 @@
 package com.example.test.ui.login;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.telephony.PhoneNumberUtils;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.support.v7.app.AppCompatActivity;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.test.R;
-import com.example.test.ui.map.MapFragment;
+import com.example.test.ui.MainActivity;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 
-public class LoginFragment extends Fragment {
+public class LoginActivity extends AppCompatActivity {
 
     private EditText numberEditText;
     private EditText passwordEditText;
     private Button sendButton;
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_login, container, false);
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_login);
+
+        if (getSharedPreferences("loginPrefs", MODE_PRIVATE).getBoolean("login", false)) {
+            openMainActivity();
+        }
+
+        numberEditText = findViewById(R.id.et_number);
+        passwordEditText = findViewById(R.id.et_password);
+        sendButton = findViewById(R.id.btn_login);
+        sendButton.setOnClickListener(v -> onClickLogin());
     }
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-
-        numberEditText = view.findViewById(R.id.et_number);
-        passwordEditText = view.findViewById(R.id.et_password);
-        sendButton = view.findViewById(R.id.btn_login);
-        sendButton.setOnClickListener(v -> onClickLogin());
+    private void openMainActivity(){
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     private void onClickLogin() {
@@ -52,9 +54,15 @@ public class LoginFragment extends Fragment {
                 String password = passwordEditText.getText().toString();
 
                 if (password.equals(number.substring(number.length() - 5))) {
-                    Toast.makeText(getContext(), "Login is successful!!!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Login is successful!", Toast.LENGTH_SHORT).show();
 
-                    getFragmentManager().beginTransaction().replace(R.id.fragment_containter, new MapFragment()).commit();
+                    SharedPreferences preferences = getSharedPreferences("loginPrefs", MODE_PRIVATE);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putBoolean("login", true);
+                    editor.putString("number", "+7" + number);
+                    editor.apply();
+
+                    openMainActivity();
                 } else {
                     passwordEditText.setError("Incorrect password");
                 }
@@ -65,5 +73,10 @@ public class LoginFragment extends Fragment {
         } catch (NumberParseException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        finishAffinity();
     }
 }

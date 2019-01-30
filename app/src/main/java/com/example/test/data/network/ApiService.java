@@ -1,5 +1,6 @@
 package com.example.test.data.network;
 
+import com.example.test.data.model.Chat;
 import com.example.test.data.model.City;
 import com.example.test.data.model.Message;
 
@@ -35,8 +36,8 @@ public interface ApiService {
 
 
     @Headers("Authorization:1834718703151e8fb77ccb6d4463cb1d")
-    @GET("chat/create")
-    Call<String> createChat();
+    @PUT("chat/create")
+    Call<Chat> createChat();
 
     @Headers("Authorization:1834718703151e8fb77ccb6d4463cb1d")
     @PUT("chat/send/{id}")

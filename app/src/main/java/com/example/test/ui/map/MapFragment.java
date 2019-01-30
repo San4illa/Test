@@ -5,10 +5,16 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
 import com.example.test.R;
 import com.example.test.data.model.City;
@@ -17,7 +23,6 @@ import com.example.test.data.network.ApiService;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
@@ -29,27 +34,36 @@ import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 import static android.content.ContentValues.TAG;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
+    private static final int MAP_VIEW = 0;
+    private static final int LIST_VIEW = 1;
+
+    private int viewType = MAP_VIEW;
+
     private GoogleMap map;
     private MapView mapView;
 
+    private RecyclerView recyclerView;
+    private ProgressBar progressBar;
+    private FloatingActionButton fab;
+    private CityAdapter adapter;
+
     private ArrayList<City> cities = new ArrayList<>();
 
-    LatLng farLeft = new LatLng(0, 0);
-    LatLng farRight = new LatLng(0, 0);
-    LatLng nearLeft = new LatLng(0, 0);
-    LatLng nearRight = new LatLng(0, 0);
+    private LatLng farLeft = new LatLng(0, 0);
+    private LatLng farRight = new LatLng(0, 0);
+    private LatLng nearLeft = new LatLng(0, 0);
+    private LatLng nearRight = new LatLng(0, 0);
+
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        setHasOptionsMenu(true);
         return inflater.inflate(R.layout.fragment_map, container, false);
     }
 
@@ -62,105 +76,113 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         mapView.onResume();
         mapView.getMapAsync(this);
 
-        FloatingActionButton fab = view.findViewById(R.id.fab);
-        fab.setOnClickListener(v -> {
-            VisibleRegion visibleRegion = map.getProjection().getVisibleRegion();
+        recyclerView = view.findViewById(R.id.rv_marks);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-//            LatLng farLeft = visibleRegion.farLeft;
-//            LatLng farRight = visibleRegion.farRight;
-//            LatLng nearLeft = visibleRegion.nearLeft;
-//            LatLng nearRight = visibleRegion.nearRight;
+        adapter = new CityAdapter(cities);
+        recyclerView.setAdapter(adapter);
 
-            farLeft = visibleRegion.farLeft;
-            farRight = visibleRegion.farRight;
-            nearLeft = visibleRegion.nearLeft;
-            nearRight = visibleRegion.nearRight;
+        progressBar = view.findViewById(R.id.pb);
+        fab = view.findViewById(R.id.fab);
+        fab.setOnClickListener(v -> getMarks());
+    }
 
-            mapView.getMapAsync(MapFragment.this::onMapReady);
+    private void getMarks() {
+        progressBar.setVisibility(View.VISIBLE);
 
-            double minLat = nearLeft.latitude;
-            double maxLat = farRight.latitude;
-            double minLng = nearLeft.longitude;
-            double maxLng = farRight.longitude;
+        VisibleRegion visibleRegion = map.getProjection().getVisibleRegion();
 
-            ApiClient.getClient().create(ApiService.class).getCitiesRx(minLat, maxLat, minLng, maxLng)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribeWith(new Observer<List<City>>() {
-                        @Override
-                        public void onSubscribe(Disposable d) {
-                            Log.d(TAG, "onSubscribe");
+        farLeft = visibleRegion.farLeft;
+        farRight = visibleRegion.farRight;
+        nearLeft = visibleRegion.nearLeft;
+        nearRight = visibleRegion.nearRight;
+
+        mapView.getMapAsync(MapFragment.this::onMapReady);
+
+        double minLat = nearLeft.latitude;
+        double maxLat = farRight.latitude;
+        double minLng = nearLeft.longitude;
+        double maxLng = farRight.longitude;
+
+        ApiClient.getClient().create(ApiService.class).getCitiesRx(minLat, maxLat, minLng, maxLng)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribeWith(new Observer<List<City>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        Log.d(TAG, "onSubscribe");
+                    }
+
+                    @Override
+                    public void onNext(List<City> c) {
+                        Log.d(TAG, "onNext: " + c.size());
+
+                        cities.clear();
+
+                        int max;
+                        if (c.size() < 250) {
+                            max = c.size();
+                        } else {
+                            max = 250;
                         }
 
-                        @Override
-                        public void onNext(List<City> c) {
-                            Log.d(TAG, "onNext: " + c.size());
-
-                            cities.clear();
-
-                            int max;
-                            if (c.size() < 250) {
-                                max = c.size();
-                            } else {
-                                max = 250;
-                            }
-
-                            for (int i = 0; i < max; i++) {
-                                cities.add(c.get(i));
-                            }
-
-                            mapView.getMapAsync(MapFragment.this::onMapReady);
+                        for (int i = 0; i < max; i++) {
+                            cities.add(c.get(i));
                         }
 
-                        @Override
-                        public void onError(Throwable e) {
-                            Log.d(TAG, "onError " + e);
-                        }
+                        mapView.getMapAsync(MapFragment.this::onMapReady);
+                        adapter.notifyDataSetChanged();
 
-                        @Override
-                        public void onComplete() {
-                            Log.d(TAG, "onComplete");
-                        }
-                    });
+                        progressBar.setVisibility(View.INVISIBLE);
+                    }
 
-//            Call<List<City>> call = ApiClient.getClient().create(ApiService.class).getCities(minLat, maxLat, minLng, maxLng);
-//            call.enqueue(new Callback<List<City>>() {
-//                @Override
-//                public void onResponse(Call<List<City>> call, Response<List<City>> response) {
-//                    Log.d(TAG, "onResponse: " + response.body().size());
-//                    if (response.body() != null) {
-//                        cities.clear();
-//                        cities.addAll(response.body());
-//
-//                        mapView.getMapAsync(MapFragment.this::onMapReady);
-//                    }
-//                }
-//
-//                @Override
-//                public void onFailure(Call<List<City>> call, Throwable t) {
-//                    Log.d(TAG, "onFailure: ");
-//                }
-//            });
-        });
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.d(TAG, "onError " + e);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.d(TAG, "onComplete");
+                    }
+                });
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_map, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_switch_view) {
+            if (viewType == MAP_VIEW) {
+                mapView.setVisibility(View.INVISIBLE);
+                recyclerView.setVisibility(View.VISIBLE);
+
+                item.setIcon(R.drawable.ic_action_map);
+                item.setTitle(getString(R.string.action_map));
+                viewType = LIST_VIEW;
+            } else {
+                mapView.setVisibility(View.VISIBLE);
+                recyclerView.setVisibility(View.INVISIBLE);
+
+                item.setIcon(R.drawable.ic_action_list);
+                item.setTitle(getString(R.string.action_list));
+                viewType = MAP_VIEW;
+            }
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
         map.clear();
-
-        map.addMarker(new MarkerOptions()
-                .position(farLeft))
-                .setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
-        map.addMarker(new MarkerOptions()
-                .position(farRight))
-                .setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
-        map.addMarker(new MarkerOptions()
-                .position(nearLeft))
-                .setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
-        map.addMarker(new MarkerOptions()
-                .position(nearRight))
-                .setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
 
         for (City city : cities) {
             map.addMarker(new MarkerOptions()
@@ -169,3 +191,4 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 }
+

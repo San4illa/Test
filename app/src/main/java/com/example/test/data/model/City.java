@@ -7,7 +7,6 @@ public class City {
     private double lat;
     private double lng;
 
-    // City("RU", "Saint Petersburg", 59.9402, 30.3138)
     public City(String country, String name, double lat, double lng) {
         this.country = country;
         this.name = name;

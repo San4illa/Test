@@ -1,9 +1,9 @@
 package com.example.test.ui;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -12,19 +12,17 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
 
 import com.example.test.R;
 import com.example.test.ui.chat.ChatFragment;
-import com.example.test.ui.login.LoginFragment;
 import com.example.test.ui.map.MapFragment;
-import com.example.test.ui.marks.MarksFragment;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private DrawerLayout drawer;
-//    private Fragment fragment = new LoginFragment();
-    private Fragment fragment = new com.example.test.ui.MapFragment();
+    private Fragment fragment = new MapFragment();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +40,10 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        String number = getSharedPreferences("loginPrefs", MODE_PRIVATE).getString("number", "");
+        TextView headerTextView = navigationView.getHeaderView(0).findViewById(R.id.tv_header);
+        headerTextView.setText(number);
+
         inflateFragment(fragment);
         setTitle(getString(R.string.title_map));
     }
@@ -55,36 +57,36 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
+//    @Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//        getMenuInflater().inflate(R.menu.main, menu);
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        int id = item.getItemId();
+//
+//        if (id == R.id.action_settings) {
+//            return true;
+//        }
+//
+//        return super.onOptionsItemSelected(item);
+//    }
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        switch (item.getItemId()){
+        switch (item.getItemId()) {
             case R.id.nav_map:
                 fragment = new MapFragment();
-                break;
-            case R.id.nav_marks:
-                fragment = new MarksFragment();
                 break;
             case R.id.nav_chat:
                 fragment = new ChatFragment();
                 break;
+            case R.id.nav_logout:
+                onClickLogout();
+                finishAffinity();
         }
 
         inflateFragment(fragment);
@@ -95,10 +97,18 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    private void inflateFragment(Fragment fragment){
+    private void inflateFragment(Fragment fragment) {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
 
         fragmentTransaction.replace(R.id.fragment_containter, fragment);
         fragmentTransaction.commit();
+    }
+
+    private void onClickLogout(){
+        SharedPreferences preferences = getSharedPreferences("loginPrefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("login", false);
+        editor.putString("number", "");
+        editor.apply();
     }
 }
